@@ -1,74 +1,71 @@
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/sirius-menu/rayfield/main/rayfield.lua'))()  -- Replaced with the actual URL (assuming it's the correct one; if not, find the real Rayfield URL)
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/sirius-menu/rayfield/main/rayfield.lua'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "Infinite Jump Script",
+   Name = "Homeless Life Hub",
    LoadingTitle = "Rayfield Interface Suite",
    LoadingSubtitle = "by Sirius",
    ConfigurationSaving = {
       Enabled = true,
-      FolderName = nil, -- Create a custom folder for your hub/game
-      FileName = "Big Hub"
+      FolderName = nil,
+      FileName = "HomelessLifeHub"
    },
    Discord = {
       Enabled = false,
-      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ABCD would be ABCD
-      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+      Invite = "noinvitelink",
+      RememberJoins = true
    },
-   KeySystem = false, -- Set this to true to use our key system
+   KeySystem = false,
    KeySettings = {
       Title = "Untitled",
       Subtitle = "Key System",
       Note = "No method of obtaining the key is provided",
-      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
-      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be saved, but if you change the key, they will be unable to use your script
-      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
-      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+      FileName = "Key",
+      SaveKey = true,
+      GrabKeyFromSite = false,
+      Key = {"Hello"}
    }
 })
 
-local MainTab = Window:CreateTab("Main", 4483362458) -- Title, Image
-local MainSection = MainTab:CreateSection("Main")
+-- Main Tab for basic features
+local MainTab = Window:CreateTab("Main", 4483362458)
+local MainSection = MainTab:CreateSection("Main Features")
 
+-- Infinite Jump Button
+local InfiniteJumpEnabled = false
 local Button = MainTab:CreateButton({
-   Name = "Infinite Jump",
+   Name = "Toggle Infinite Jump",
    Callback = function()
-  local InfiniteJumpEnabled = true
-game:GetService("UserInputService").JumpRequest:connect(function()
-	if InfiniteJumpEnabled then
-		game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")
-	end
-end)
-local InfiniteJump = CreateButton("Infinite Jump: On", StuffFrame)
-InfiniteJump.Position = UDim2.new(0,10,0,130)
-InfiniteJump.Size = UDim2.new(0,150,0,30)
-InfiniteJump.MouseButton1Click:connect(function()
-	local state = InfiniteJump.Text:sub(string.len("Infinite Jump: ") + 1) --too lazy to count lol
-	local new = state == "Off" and "On" or state == "On" and "Off"
-	InfiniteJumpEnabled = new == "On"
-	InfiniteJump.Text = "Infinite Jump: " .. new
-end)
+      InfiniteJumpEnabled = not InfiniteJumpEnabled
+      if InfiniteJumpEnabled then
+         game:GetService("UserInputService").JumpRequest:Connect(function()
+            if InfiniteJumpEnabled then
+               game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+            end
+         end)
+         Rayfield:Notify({
+            Title = "Infinite Jump",
+            Content = "Enabled!",
+            Duration = 3
+         })
+      else
+         Rayfield:Notify({
+            Title = "Infinite Jump",
+            Content = "Disabled!",
+            Duration = 3
+         })
+      end
    end,
 })
 
-local Toggle = MainTab:CreateToggle({
-   Name = "Auto Farm",
-   CurrentValue = false,
-   Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
-   Callback = function(Value)
-        print("FARMING")
-   end,
-})
-
--- Added Noclip Toggle with looping to keep it active
+-- Noclip Toggle
 local NoclipToggle = MainTab:CreateToggle({
    Name = "Noclip",
    CurrentValue = false,
-   Flag = "NoclipToggle", -- Unique flag
+   Flag = "NoclipToggle",
    Callback = function(Value)
       local player = game.Players.LocalPlayer
       local noclipLoop = nil
       if Value then
-         -- Enable noclip with loop
          local function enableNoclip(character)
             if character then
                for _, part in ipairs(character:GetDescendants()) do
@@ -82,7 +79,6 @@ local NoclipToggle = MainTab:CreateToggle({
             enableNoclip(player.Character)
          end
          player.CharacterAdded:Connect(enableNoclip)
-         -- Loop to keep noclip on
          noclipLoop = task.spawn(function()
             while Value do
                wait(1)
@@ -91,9 +87,12 @@ local NoclipToggle = MainTab:CreateToggle({
                end
             end
          end)
-         print("Noclip enabled")
+         Rayfield:Notify({
+            Title = "Noclip",
+            Content = "Enabled!",
+            Duration = 3
+         })
       else
-         -- Disable noclip
          if noclipLoop then
             task.cancel(noclipLoop)
             noclipLoop = nil
@@ -110,32 +109,112 @@ local NoclipToggle = MainTab:CreateToggle({
          if player.Character then
             disableNoclip(player.Character)
          end
-         print("Noclip disabled")
+         Rayfield:Notify({
+            Title = "Noclip",
+            Content = "Disabled!",
+            Duration = 3
+         })
       end
    end,
 })
 
-local TPTab = Window:CreateTab("🏝 Teleports", nil) -- Title, Image
+-- Farm Tab for auto-farming
+local FarmTab = Window:CreateTab("Farm", 4483362458)
+local FarmSection = FarmTab:CreateSection("Auto Farm Features")
 
+-- Auto Farm Toggle (e.g., auto-work jobs like Pizza Place)
+local AutoFarmEnabled = false
+local AutoFarmToggle = FarmTab:CreateToggle({
+   Name = "Auto Farm Jobs",
+   CurrentValue = false,
+   Flag = "AutoFarmToggle",
+   Callback = function(Value)
+      AutoFarmEnabled = Value
+      if Value then
+         task.spawn(function()
+            while AutoFarmEnabled do
+               wait(1)  -- Adjust delay as needed
+               local player = game.Players.LocalPlayer
+               if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                  -- Example: Teleport to Pizza Place and simulate work (adjust based on game)
+                  local pizzaPlace = workspace:FindFirstChild("PizzaPlace")  -- Replace with actual path if different
+                  if pizzaPlace then
+                     player.Character.HumanoidRootPart.CFrame = pizzaPlace.CFrame + Vector3.new(0, 5, 0)
+                     -- Simulate clicking or interacting (this is a placeholder; real auto-farm might need more logic)
+                     wait(2)
+                     -- Add job interaction code here if possible (e.g., fire events)
+                  end
+               end
+            end
+         end)
+         Rayfield:Notify({
+            Title = "Auto Farm",
+            Content = "Enabled! Farming jobs...",
+            Duration = 3
+         })
+      else
+         Rayfield:Notify({
+            Title = "Auto Farm",
+            Content = "Disabled!",
+            Duration = 3
+         })
+      end
+   end,
+})
+
+-- Teleports Tab
+local TPTab = Window:CreateTab("🏝 Teleports", nil)
+local TPSection = TPTab:CreateSection("Teleport to Locations")
+
+-- Teleport to Spawn
 local Button1 = TPTab:CreateButton({
-   Name = "Starter Island",
+   Name = "Teleport to Spawn",
    Callback = function()
-        --Teleport1
+      local player = game.Players.LocalPlayer
+      if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+         player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 10, 0)  -- Adjust to actual spawn coords in Homeless Life
+         Rayfield:Notify({
+            Title = "Teleport",
+            Content = "Teleported to Spawn!",
+            Duration = 3
+         })
+      end
    end,
 })
 
+-- Teleport to Pizza Place (Job)
 local Button2 = TPTab:CreateButton({
-   Name = "Pirate Island",
+   Name = "Teleport to Pizza Place",
    Callback = function()
-        --Teleport2
+      local player = game.Players.LocalPlayer
+      if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+         local pizzaPlace = workspace:FindFirstChild("PizzaPlace")  -- Adjust path
+         if pizzaPlace then
+            player.Character.HumanoidRootPart.CFrame = pizzaPlace.CFrame + Vector3.new(0, 5, 0)
+         else
+            player.Character.HumanoidRootPart.CFrame = CFrame.new(100, 10, 100)  -- Fallback coords
+         end
+         Rayfield:Notify({
+            Title = "Teleport",
+            Content = "Teleported to Pizza Place!",
+            Duration = 3
+         })
+      end
    end,
 })
 
+-- Teleport to Another Spot (e.g., Bank or House Area)
 local Button3 = TPTab:CreateButton({
-   Name = "Pineapple Paradise",
+   Name = "Teleport to Bank",
    Callback = function()
-        --Teleport3
+      local player = game.Players.LocalPlayer
+      if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+         player.Character.HumanoidRootPart.CFrame = CFrame.new(200, 10, 200)  -- Adjust to actual bank coords
+         Rayfield:Notify({
+            Title = "Teleport",
+            Content = "Teleported to Bank!",
+            Duration = 3
+         })
+      end
    end,
 })
-
-local TPTab =
