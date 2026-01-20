@@ -1,220 +1,209 @@
-local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/sirius-menu/rayfield/main/rayfield.lua'))()
+ 
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local localPlayer = Players.LocalPlayer
 
-local Window = Rayfield:CreateWindow({
-   Name = "Homeless Life Hub",
-   LoadingTitle = "Rayfield Interface Suite",
-   LoadingSubtitle = "by Sirius",
-   ConfigurationSaving = {
-      Enabled = true,
-      FolderName = nil,
-      FileName = "HomelessLifeHub"
-   },
-   Discord = {
-      Enabled = false,
-      Invite = "noinvitelink",
-      RememberJoins = true
-   },
-   KeySystem = false,
-   KeySettings = {
-      Title = "Untitled",
-      Subtitle = "Key System",
-      Note = "No method of obtaining the key is provided",
-      FileName = "Key",
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {"Hello"}
-   }
-})
+-- Global toggle for flying (now jump-based teleport)
+local flyingEnabled = false
 
--- Main Tab for basic features
-local MainTab = Window:CreateTab("Main", 4483362458)
-local MainSection = MainTab:CreateSection("Main Features")
+-- Create ScreenGui if not already present (or just use an existing one)
+local screenGui = script.Parent -- Assuming this script is inside ScreenGui
 
--- Infinite Jump Button
-local InfiniteJumpEnabled = false
-local Button = MainTab:CreateButton({
-   Name = "Toggle Infinite Jump",
-   Callback = function()
-      InfiniteJumpEnabled = not InfiniteJumpEnabled
-      if InfiniteJumpEnabled then
-         game:GetService("UserInputService").JumpRequest:Connect(function()
-            if InfiniteJumpEnabled then
-               game:GetService("Players").LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+-- Toggle Button (Hamburger Icon)
+local toggleBtn = Instance.new("TextButton")
+toggleBtn.Size = UDim2.new(0, 50, 0, 50)
+toggleBtn.Position = UDim2.new(0, 20, 0, 20)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+toggleBtn.BorderSizePixel = 0
+toggleBtn.Text = ""
+toggleBtn.Parent = screenGui
+
+-- Hamburger Lines (using Frames for simplicity)
+local line1 = Instance.new("Frame")
+line1.Size = UDim2.new(1, -10, 0, 4)
+line1.Position = UDim2.new(0, 5, 0, 10)
+line1.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+line1.BorderSizePixel = 0
+line1.Parent = toggleBtn
+
+local line2 = Instance.new("Frame")
+line2.Size = UDim2.new(1, -10, 0, 4)
+line2.Position = UDim2.new(0, 5, 0, 23)
+line2.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+line2.BorderSizePixel = 0
+line2.Parent = toggleBtn
+
+local line3 = Instance.new("Frame")
+line3.Size = UDim2.new(1, -10, 0, 4)
+line3.Position = UDim2.new(0, 5, 0, 36)
+line3.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+line3.BorderSizePixel = 0
+line3.Parent = toggleBtn
+
+-- Menu Frame
+local menu = Instance.new("Frame")
+menu.Size = UDim2.new(0, 200, 0, 0) -- Starts collapsed
+menu.Position = UDim2.new(0, 20, 0, 80)
+menu.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+menu.BorderSizePixel = 0
+menu.ClipsDescendants = true
+menu.Parent = screenGui
+
+-- Menu Items (using TextButtons)
+local homeBtn = Instance.new("TextButton")
+homeBtn.Size = UDim2.new(1, 0, 0, 40)
+homeBtn.Position = UDim2.new(0, 0, 0, 0)
+homeBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+homeBtn.Text = "Home"
+homeBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+homeBtn.Parent = menu
+
+local aboutBtn = Instance.new("TextButton")
+aboutBtn.Size = UDim2.new(1, 0, 0, 40)
+aboutBtn.Position = UDim2.new(0, 0, 0, 40)
+aboutBtn.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+aboutBtn.Text = "About"
+aboutBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+aboutBtn.Parent = menu
+
+-- Select Target Section
+local selectTargetBtn = Instance.new("TextButton")
+selectTargetBtn.Size = UDim2.new(1, 0, 0, 40)
+selectTargetBtn.Position = UDim2.new(0, 0, 0, 80)
+selectTargetBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+selectTargetBtn.Text = "Select Target ▼"
+selectTargetBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+selectTargetBtn.Parent = menu
+
+-- Enable Flying Toggle Button (now for jump-based teleport)
+local enableFlyingBtn = Instance.new("TextButton")
+enableFlyingBtn.Size = UDim2.new(1, 0, 0, 40)
+enableFlyingBtn.Position = UDim2.new(0, 0, 0, 160) -- Positioned below Select Target
+enableFlyingBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+enableFlyingBtn.Text = "Enable Flying: OFF"
+enableFlyingBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+enableFlyingBtn.Parent = menu
+
+-- Dropdown Frame for Targets (hidden initially)
+local dropdown = Instance.new("Frame")
+dropdown.Size = UDim2.new(1, 0, 0, 0) -- Starts collapsed
+dropdown.Position = UDim2.new(0, 0, 0, 120)
+dropdown.BackgroundColor3 = Color3.fromRGB(200, 200, 200)
+dropdown.BorderSizePixel = 0
+dropdown.ClipsDescendants = true
+dropdown.Parent = menu
+
+-- Example Targets (customize as needed, e.g., player names)
+local targets = {"Player1", "Player2", "Enemy1", "Ally1"} -- Replace with dynamic list if needed
+for i, target in ipairs(targets) do
+    local targetBtn = Instance.new("TextButton")
+    targetBtn.Size = UDim2.new(1, 0, 0, 30)
+    targetBtn.Position = UDim2.new(0, 0, 0, (i-1)*30)
+    targetBtn.BackgroundColor3 = Color3.fromRGB(180, 180, 180)
+    targetBtn.Text = target
+    targetBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+    targetBtn.Parent = dropdown
+    
+    -- Handle target selection: Jump-teleport to the selected player if enabled
+    targetBtn.MouseButton1Click:Connect(function()
+        local targetPlayer = Players:FindFirstChild(target) -- Assumes target is a player name
+        if targetPlayer and targetPlayer.Character and targetPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local localCharacter = localPlayer.Character
+            if localCharacter and localCharacter:FindFirstChild("HumanoidRootPart") and localCharacter:FindFirstChild("Humanoid") then
+                if flyingEnabled then
+                    -- Jump-based teleport logic (inspired by infinite jump script)
+                    local humanoid = localCharacter.Humanoid
+                    local rootPart = localCharacter.HumanoidRootPart
+                    local targetRootPart = targetPlayer.Character.HumanoidRootPart
+                    
+                    -- Disable controls during teleport
+                    humanoid.PlatformStand = true
+                    
+                    -- Save original walk speed
+                    local originalWalkSpeed = humanoid.WalkSpeed
+                    
+                    -- Set high speed for fast teleport
+                    humanoid.WalkSpeed = 100
+                    
+                    -- Enable infinite jump (from the provided script logic)
+                    local infiniteJumpEnabled = true
+                    local jumpConnection = UserInputService.JumpRequest:Connect(function()
+                        if infiniteJumpEnabled then
+                            humanoid:ChangeState("Jumping")
+                        end
+                    end)
+                    
+                    -- Target position (11 studs above)
+                    local targetPos = targetRootPart.Position + Vector3.new(0, 11, 0)
+                    
+                    -- Move towards target with jumping
+                    while (rootPart.Position - targetPos).Magnitude > 5 do
+                        humanoid:MoveTo(targetPos)
+                        wait(0.1) -- Small delay to allow movement
+                    end
+                    
+                    -- Arrived: Disable jump, reset speed, re-enable controls
+                    infiniteJumpEnabled = false
+                    jumpConnection:Disconnect()
+                    humanoid.WalkSpeed = originalWalkSpeed
+                    humanoid.PlatformStand = false
+                    
+                    print("Jump-teleported to target: " .. target .. " (positioned 11 studs above)")
+                else
+                    print("Flying disabled. Selected target: " .. target)
+                end
+            else
+                warn("Local character not found or invalid.")
             end
-         end)
-         Rayfield:Notify({
-            Title = "Infinite Jump",
-            Content = "Enabled!",
-            Duration = 3
-         })
-      else
-         Rayfield:Notify({
-            Title = "Infinite Jump",
-            Content = "Disabled!",
-            Duration = 3
-         })
-      end
-   end,
-})
+        else
+            warn("Target player not found or invalid.")
+        end
+    end)
+end
 
--- Noclip Toggle
-local NoclipToggle = MainTab:CreateToggle({
-   Name = "Noclip",
-   CurrentValue = false,
-   Flag = "NoclipToggle",
-   Callback = function(Value)
-      local player = game.Players.LocalPlayer
-      local noclipLoop = nil
-      if Value then
-         local function enableNoclip(character)
-            if character then
-               for _, part in ipairs(character:GetDescendants()) do
-                  if part:IsA("BasePart") and part.CanCollide then
-                     part.CanCollide = false
-                  end
-               end
-            end
-         end
-         if player.Character then
-            enableNoclip(player.Character)
-         end
-         player.CharacterAdded:Connect(enableNoclip)
-         noclipLoop = task.spawn(function()
-            while Value do
-               wait(1)
-               if player.Character then
-                  enableNoclip(player.Character)
-               end
-            end
-         end)
-         Rayfield:Notify({
-            Title = "Noclip",
-            Content = "Enabled!",
-            Duration = 3
-         })
-      else
-         if noclipLoop then
-            task.cancel(noclipLoop)
-            noclipLoop = nil
-         end
-         local function disableNoclip(character)
-            if character then
-               for _, part in ipairs(character:GetDescendants()) do
-                  if part:IsA("BasePart") then
-                     part.CanCollide = true
-                  end
-               end
-            end
-         end
-         if player.Character then
-            disableNoclip(player.Character)
-         end
-         Rayfield:Notify({
-            Title = "Noclip",
-            Content = "Disabled!",
-            Duration = 3
-         })
-      end
-   end,
-})
+-- Toggle Enable Flying (now for jump-teleport)
+enableFlyingBtn.MouseButton1Click:Connect(function()
+    flyingEnabled = not flyingEnabled
+    enableFlyingBtn.Text = flyingEnabled and "Enable Flying: ON" or "Enable Flying: OFF"
+    print("Jump-teleport " .. (flyingEnabled and "enabled" or "disabled"))
+end)
 
--- Farm Tab for auto-farming
-local FarmTab = Window:CreateTab("Farm", 4483362458)
-local FarmSection = FarmTab:CreateSection("Auto Farm Features")
+-- Toggle Logic
+local isOpen = false
+local menuTweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local dropdownTweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
--- Auto Farm Toggle (e.g., auto-work jobs like Pizza Place)
-local AutoFarmEnabled = false
-local AutoFarmToggle = FarmTab:CreateToggle({
-   Name = "Auto Farm Jobs",
-   CurrentValue = false,
-   Flag = "AutoFarmToggle",
-   Callback = function(Value)
-      AutoFarmEnabled = Value
-      if Value then
-         task.spawn(function()
-            while AutoFarmEnabled do
-               wait(1)  -- Adjust delay as needed
-               local player = game.Players.LocalPlayer
-               if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-                  -- Example: Teleport to Pizza Place and simulate work (adjust based on game)
-                  local pizzaPlace = workspace:FindFirstChild("PizzaPlace")  -- Replace with actual path if different
-                  if pizzaPlace then
-                     player.Character.HumanoidRootPart.CFrame = pizzaPlace.CFrame + Vector3.new(0, 5, 0)
-                     -- Simulate clicking or interacting (this is a placeholder; real auto-farm might need more logic)
-                     wait(2)
-                     -- Add job interaction code here if possible (e.g., fire events)
-                  end
-               end
-            end
-         end)
-         Rayfield:Notify({
-            Title = "Auto Farm",
-            Content = "Enabled! Farming jobs...",
-            Duration = 3
-         })
-      else
-         Rayfield:Notify({
-            Title = "Auto Farm",
-            Content = "Disabled!",
-            Duration = 3
-         })
-      end
-   end,
-})
+toggleBtn.MouseButton1Click:Connect(function()
+    isOpen = not isOpen
+    if isOpen then
+        -- Animate hamburger to X
+        TweenService:Create(line1, TweenInfo.new(0.3), {Rotation = 45, Position = UDim2.new(0, 5, 0, 23)}):Play()
+        TweenService:Create(line2, TweenInfo.new(0.3), {Size = UDim2.new(0, 0, 0, 4)}):Play()
+        TweenService:Create(line3, TweenInfo.new(0.3), {Rotation = -45, Position = UDim2.new(0, 5, 0, 23)}):Play()
+        
+        -- Open menu
+        TweenService:Create(menu, menuTweenInfo, {Size = UDim2.new(0, 200, 0, 240)}):Play() -- Increased height for new button
+    else
+        -- Animate X back to hamburger
+        TweenService:Create(line1, TweenInfo.new(0.3), {Rotation = 0, Position = UDim2.new(0, 5, 0, 10)}):Play()
+        TweenService:Create(line2, TweenInfo.new(0.3), {Size = UDim2.new(1, -10, 0, 4)}):Play()
+        TweenService:Create(line3, TweenInfo.new(0.3), {Rotation = 0, Position = UDim2.new(0, 5, 0, 36)}):Play()
+        
+        -- Close menu
+        TweenService:Create(menu, menuTweenInfo, {Size = UDim2.new(0, 200, 0, 0)}):Play()
+    end
+end)
 
--- Teleports Tab
-local TPTab = Window:CreateTab("🏝 Teleports", nil)
-local TPSection = TPTab:CreateSection("Teleport to Locations")
-
--- Teleport to Spawn
-local Button1 = TPTab:CreateButton({
-   Name = "Teleport to Spawn",
-   Callback = function()
-      local player = game.Players.LocalPlayer
-      if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-         player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 10, 0)  -- Adjust to actual spawn coords in Homeless Life
-         Rayfield:Notify({
-            Title = "Teleport",
-            Content = "Teleported to Spawn!",
-            Duration = 3
-         })
-      end
-   end,
-})
-
--- Teleport to Pizza Place (Job)
-local Button2 = TPTab:CreateButton({
-   Name = "Teleport to Pizza Place",
-   Callback = function()
-      local player = game.Players.LocalPlayer
-      if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-         local pizzaPlace = workspace:FindFirstChild("PizzaPlace")  -- Adjust path
-         if pizzaPlace then
-            player.Character.HumanoidRootPart.CFrame = pizzaPlace.CFrame + Vector3.new(0, 5, 0)
-         else
-            player.Character.HumanoidRootPart.CFrame = CFrame.new(100, 10, 100)  -- Fallback coords
-         end
-         Rayfield:Notify({
-            Title = "Teleport",
-            Content = "Teleported to Pizza Place!",
-            Duration = 3
-         })
-      end
-   end,
-})
-
--- Teleport to Another Spot (e.g., Bank or House Area)
-local Button3 = TPTab:CreateButton({
-   Name = "Teleport to Bank",
-   Callback = function()
-      local player = game.Players.LocalPlayer
-      if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-         player.Character.HumanoidRootPart.CFrame = CFrame.new(200, 10, 200)  -- Adjust to actual bank coords
-         Rayfield:Notify({
-            Title = "Teleport",
-            Content = "Teleported to Bank!",
-            Duration = 3
-         })
-      end
-   end,
-})
+-- Toggle Dropdown
+local dropdownOpen = false
+selectTargetBtn.MouseButton1Click:Connect(function()
+    dropdownOpen = not dropdownOpen
+    if dropdownOpen then
+        TweenService:Create(dropdown, dropdownTweenInfo, {Size = UDim2.new(1, 0, 0, #targets * 30)}):Play()
+        selectTargetBtn.Text = "Select Target ▲"
+    else
+        TweenService:Create(dropdown, dropdownTweenInfo, {Size = UDim2.new(1, 0, 0, 0)}):Play()
+        selectTargetBtn.Text = "Select Target ▼"
+    end
+end)
