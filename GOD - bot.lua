@@ -1,166 +1,141 @@
-local Players = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local VirtualUser = game:GetService("VirtualUser")
-local LocalPlayer = Players.LocalPlayer
+local Rayfield = loadstring(game:HttpGet('https://raw.githubusercontent.com/sirius-menu/rayfield/main/rayfield.lua'))()  -- Replaced with the actual URL (assuming it's the correct one; if not, find the real Rayfield URL)
 
-local bots = {}
-local targetPlayer
-local hitboxSize = Vector3.new(40, 40, 40)
-local numBots = 4
+local Window = Rayfield:CreateWindow({
+   Name = "Infinite Jump Script",
+   LoadingTitle = "Rayfield Interface Suite",
+   LoadingSubtitle = "by Sirius",
+   ConfigurationSaving = {
+      Enabled = true,
+      FolderName = nil, -- Create a custom folder for your hub/game
+      FileName = "Big Hub"
+   },
+   Discord = {
+      Enabled = false,
+      Invite = "noinvitelink", -- The Discord invite code, do not include discord.gg/. E.g. discord.gg/ABCD would be ABCD
+      RememberJoins = true -- Set this to false to make them join the discord every time they load it up
+   },
+   KeySystem = false, -- Set this to true to use our key system
+   KeySettings = {
+      Title = "Untitled",
+      Subtitle = "Key System",
+      Note = "No method of obtaining the key is provided",
+      FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+      SaveKey = true, -- The user's key will be saved, but if you change the key, they will be saved, but if you change the key, they will be unable to use your script
+      GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+      Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
+   }
+})
 
-local function spawnFlyBot(pos)
-    local model = Instance.new("Model")
-    model.Name = "GODBot"
-    model.Parent = workspace
+local MainTab = Window:CreateTab("Main", 4483362458) -- Title, Image
+local MainSection = MainTab:CreateSection("Main")
 
-    local root = Instance.new("Part")
-    root.Name = "HumanoidRootPart"
-    root.Size = Vector3.new(4, 6, 2)
-    root.Color = Color3.fromRGB(255, 50, 50)
-    root.Transparency = 0.2
-    root.CanCollide = false
-    root.Anchored = true
-    root.Position = pos + Vector3.new(0, 12, 0)
-    root.Parent = model
-
-    task.delay(0.06, function() root.Anchored = false end)
-
-    local hum = Instance.new("Humanoid")
-    hum.Parent = model
-    hum.PlatformStand = true
-
-    model.PrimaryPart = root
-
-    local bb = Instance.new("BillboardGui", root)
-    bb.Size = UDim2.new(0, 80, 0, 40)
-    bb.StudsOffset = Vector3.new(0, 3.5, 0)
-    bb.AlwaysOnTop = true
-    local lbl = Instance.new("TextLabel", bb)
-    lbl.Size = UDim2.new(1,0,1,0)
-    lbl.BackgroundTransparency = 1
-    lbl.Text = "BOT"
-    lbl.TextColor3 = Color3.new(1,1,1)
-    lbl.TextScaled = true
-
-    local bp = Instance.new("BodyPosition")
-    bp.MaxForce = Vector3.new(20000, 120000, 20000)
-    bp.D = 1200
-    bp.P = 12500
-    bp.Parent = root
-
-    print("Spawned bot at " .. tostring(pos))
-    return {model = model, root = root, bp = bp}
-end
-
-local function spawnBotsAroundChar()
-    local char = LocalPlayer.Character
-    if not char or not char.PrimaryPart then 
-        print("Cannot spawn: No character / HRP")
-        return 
-    end
-    clearBots()
-    for i = 1, numBots do
-        local offset = Vector3.new(math.random(-10,10), 0, math.random(-10,10))
-        local bot = spawnFlyBot(char.PrimaryPart.Position + offset)
-        table.insert(bots, bot)
-    end
-    print("Spawned " .. numBots .. " bots around you")
-end
-
-local function clearBots()
-    for _, bot in ipairs(bots) do
-        if bot.model then bot.model:Destroy() end
-    end
-    bots = {}
-    print("Bots cleared")
-end
-
--- GUI
-local gui = Instance.new("ScreenGui", game:GetService("CoreGui"))
-gui.Name = "GOD_Bots"
-local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 280, 0, 220)
-frame.Position = UDim2.new(0.5, -140, 0.15, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
-frame.Active = true
-frame.Draggable = true
-
-local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1,0,0,30)
-title.Text = "GOD Bot Swarm - Debug"
-title.BackgroundTransparency = 1
-title.TextColor3 = Color3.new(1,0.8,0.8)
-title.TextSize = 20
-
-local input = Instance.new("TextBox", frame)
-input.Size = UDim2.new(0.9,0,0,35)
-input.Position = UDim2.new(0.05,0,0.18,0)
-input.PlaceholderText = "Target name (partial)"
-input.TextScaled = true
-
-local spawnBtn = Instance.new("TextButton", frame)
-spawnBtn.Size = UDim2.new(0.9,0,0,40)
-spawnBtn.Position = UDim2.new(0.05,0,0.38,0)
-spawnBtn.Text = "Spawn & Target Player"
-spawnBtn.BackgroundColor3 = Color3.fromRGB(40, 180, 40)
-
-local testBtn = Instance.new("TextButton", frame)
-testBtn.Size = UDim2.new(0.9,0,0,40)
-testBtn.Position = UDim2.new(0.05,0,0.58,0)
-testBtn.Text = "Test Spawn Around Me"
-testBtn.BackgroundColor3 = Color3.fromRGB(60, 140, 220)
-
-local clearBtn = Instance.new("TextButton", frame)
-clearBtn.Size = UDim2.new(0.9,0,0,40)
-clearBtn.Position = UDim2.new(0.05,0,0.78,0)
-clearBtn.Text = "Clear Bots"
-clearBtn.BackgroundColor3 = Color3.fromRGB(180, 40, 40)
-
-spawnBtn.MouseButton1Click:Connect(function()
-    local search = input.Text:lower()
-    if search == "" then print("Enter a name") return end
-    targetPlayer = nil
-    for _, plr in Players:GetPlayers() do
-        if plr ~= LocalPlayer and plr.Name:lower():find(search, 1, true) then
-            targetPlayer = plr
-            break
-        end
-    end
-    if targetPlayer then
-        print("Target locked: " .. targetPlayer.Name)
-        spawnBotsAroundChar()
-    else
-        print("No player matching: " .. search)
-    end
+local Button = MainTab:CreateButton({
+   Name = "Infinite Jump",
+   Callback = function()
+  local InfiniteJumpEnabled = true
+game:GetService("UserInputService").JumpRequest:connect(function()
+	if InfiniteJumpEnabled then
+		game:GetService"Players".LocalPlayer.Character:FindFirstChildOfClass'Humanoid':ChangeState("Jumping")
+	end
 end)
-
-testBtn.MouseButton1Click:Connect(spawnBotsAroundChar)
-clearBtn.MouseButton1Click:Connect(clearBots)
-
-local lastClick = 0
-RunService.Heartbeat:Connect(function()
-    if not targetPlayer or not targetPlayer.Character then return end
-    local hrp = targetPlayer.Character:FindFirstChildWhichIsA("BasePart", true) -- more forgiving
-    if not hrp then return end
-
-    hrp.Size = hitboxSize
-    hrp.Transparency = 0.6
-    hrp.CanCollide = false
-
-    for _, bot in ipairs(bots) do
-        if bot.root and bot.bp then
-            local offset = Vector3.new(math.random(-6,6), 5 + math.random(-2,4), math.random(-6,6))
-            bot.bp.Position = hrp.Position + offset
-        end
-    end
-
-    local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
-    if myHrp and (myHrp.Position - hrp.Position).Magnitude <= 50 then
-        if tick() - lastClick > 0.07 then
-            VirtualUser:ClickButton1(Vector2.new())
-            lastClick = tick()
-        end
-    end
+local InfiniteJump = CreateButton("Infinite Jump: On", StuffFrame)
+InfiniteJump.Position = UDim2.new(0,10,0,130)
+InfiniteJump.Size = UDim2.new(0,150,0,30)
+InfiniteJump.MouseButton1Click:connect(function()
+	local state = InfiniteJump.Text:sub(string.len("Infinite Jump: ") + 1) --too lazy to count lol
+	local new = state == "Off" and "On" or state == "On" and "Off"
+	InfiniteJumpEnabled = new == "On"
+	InfiniteJump.Text = "Infinite Jump: " .. new
 end)
+   end,
+})
 
-print("GOD Bots loaded - use 'Test Spawn Around Me' to check spawning")
+local Toggle = MainTab:CreateToggle({
+   Name = "Auto Farm",
+   CurrentValue = false,
+   Flag = "Toggle1", -- A flag is the identifier for the configuration file, make sure every element has a different flag if you're using configuration saving to ensure no overlaps
+   Callback = function(Value)
+        print("FARMING")
+   end,
+})
+
+-- Added Noclip Toggle with looping to keep it active
+local NoclipToggle = MainTab:CreateToggle({
+   Name = "Noclip",
+   CurrentValue = false,
+   Flag = "NoclipToggle", -- Unique flag
+   Callback = function(Value)
+      local player = game.Players.LocalPlayer
+      local noclipLoop = nil
+      if Value then
+         -- Enable noclip with loop
+         local function enableNoclip(character)
+            if character then
+               for _, part in ipairs(character:GetDescendants()) do
+                  if part:IsA("BasePart") and part.CanCollide then
+                     part.CanCollide = false
+                  end
+               end
+            end
+         end
+         if player.Character then
+            enableNoclip(player.Character)
+         end
+         player.CharacterAdded:Connect(enableNoclip)
+         -- Loop to keep noclip on
+         noclipLoop = task.spawn(function()
+            while Value do
+               wait(1)
+               if player.Character then
+                  enableNoclip(player.Character)
+               end
+            end
+         end)
+         print("Noclip enabled")
+      else
+         -- Disable noclip
+         if noclipLoop then
+            task.cancel(noclipLoop)
+            noclipLoop = nil
+         end
+         local function disableNoclip(character)
+            if character then
+               for _, part in ipairs(character:GetDescendants()) do
+                  if part:IsA("BasePart") then
+                     part.CanCollide = true
+                  end
+               end
+            end
+         end
+         if player.Character then
+            disableNoclip(player.Character)
+         end
+         print("Noclip disabled")
+      end
+   end,
+})
+
+local TPTab = Window:CreateTab("🏝 Teleports", nil) -- Title, Image
+
+local Button1 = TPTab:CreateButton({
+   Name = "Starter Island",
+   Callback = function()
+        --Teleport1
+   end,
+})
+
+local Button2 = TPTab:CreateButton({
+   Name = "Pirate Island",
+   Callback = function()
+        --Teleport2
+   end,
+})
+
+local Button3 = TPTab:CreateButton({
+   Name = "Pineapple Paradise",
+   Callback = function()
+        --Teleport3
+   end,
+})
+
+local TPTab =
